@@ -168,7 +168,5 @@ public:
     void stream_frame(cv::Mat &frame);
 };
 
-
-
 }
 #endif

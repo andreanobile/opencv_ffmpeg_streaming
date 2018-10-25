@@ -37,16 +37,13 @@ int main(int argc, char *argv[])
                                    320, 180,
                                    cap_fps, bitrate, "high444", "rtmp://localhost/live/mystream");
 
-
-
-    //streamer.enable_av_debug_log();
+    streamer.enable_av_debug_log();
     streamer.init(streamer_config);
 
     cv::Mat read_frame;
     bool ok = video_capture.read(read_frame);
     while(ok) {
         streamer.stream_frame(read_frame);
-        //usleep(50000);
         ok = video_capture.read(read_frame);
     }
     video_capture.release();
