@@ -28,6 +28,7 @@ namespace streamer
 struct Scaler
 {
     SwsContext *ctx;
+
     Scaler()
     {
         ctx = nullptr;
@@ -81,10 +82,6 @@ struct Picture
         data = nullptr;
     }
 
-    Picture(enum AVPixelFormat pix_fmt, int width, int height)
-    {
-        init(pix_fmt, width, height);
-    }
 
     ~Picture()
     {
