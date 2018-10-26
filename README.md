@@ -1,7 +1,7 @@
 # opencv_ffmpeg_streaming
 rtmp streaming from opencv with ffmpeg / avcodec
 
-Using ffmpeg libraries from C/C++ is tricky and I could easily find easy examples without memory leaks or bad crashes that used OpenCV as input or for image processing.
+Using ffmpeg libraries from C/C++ is tricky and I could not easily find easy examples without memory leaks or bad crashes that used OpenCV as input or for image processing.
 I think that it might be helpful for others to have an example to start from, that has no leaks or crashes.
 This is an example for using the ffmpeg and opencv libraries from C++ for rtmp streaming. 
 The input is from the OpenCV VideoCapture class.
