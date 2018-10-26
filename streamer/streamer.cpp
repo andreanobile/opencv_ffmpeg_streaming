@@ -100,7 +100,6 @@ Streamer::Streamer()
 
 void Streamer::cleanup()
 {
-
     if(out_codec_ctx) {
         avcodec_close(out_codec_ctx);
         avcodec_free_context(&out_codec_ctx);
