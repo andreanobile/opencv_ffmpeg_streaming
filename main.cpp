@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 {
     if(argc != 2) {
         printf("must provide one command argument with the video file or stream to open\n");
+        return 1;
     }
     std::string video_fname;
     video_fname = std::string(argv[1]);
