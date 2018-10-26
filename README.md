@@ -21,5 +21,5 @@ $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 $ make
 ```
 
-A big thank you to the ffmpeg people for the amazing libs!!!
+A big thank you to the ffmpeg and opencv people for the amazing libs!!!
 
