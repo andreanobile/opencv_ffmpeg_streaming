@@ -71,7 +71,7 @@ static int set_options_and_open_encoder(AVStream *stream, AVCodecContext *codec_
 
     AVDictionary *codec_options = nullptr;
     av_dict_set(&codec_options, "profile", codec_profile.c_str(), 0);
-    av_dict_set(&codec_options, "preset", "superfast", 0);
+    av_dict_set(&codec_options, "preset", "fast", 0);
     av_dict_set(&codec_options, "tune", "zerolatency", 0);
 
     // open video encoder
