@@ -66,7 +66,7 @@ struct Picture
         frame = av_frame_alloc();
 
         int sz =  av_image_get_buffer_size(pix_fmt, width, height, 1);
-        int ret = posix_memalign((void**)&data, STREAMER_ALIGN_FRAME_BUFFER, sz);
+        int ret = posix_memalign(reinterpret_cast<void**>(&data), STREAMER_ALIGN_FRAME_BUFFER, sz);
 
         av_image_fill_arrays(frame->data, frame->linesize, data, pix_fmt, width, height, 1);
         frame->format = pix_fmt;
@@ -162,8 +162,8 @@ public:
     ~Streamer();
     void enable_av_debug_log();
     int init(const StreamerConfig &streamer_config);
-    void stream_frame(cv::Mat &frame);
+    void stream_frame(const cv::Mat &frame);
 };
 
-}
+} // namespace streamer
 #endif

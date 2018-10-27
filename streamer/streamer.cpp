@@ -122,7 +122,7 @@ Streamer::~Streamer()
 }
 
 
-void Streamer::stream_frame(cv::Mat &image)
+void Streamer::stream_frame(const cv::Mat &image)
 {
     if(can_stream()) {
         const int stride[] = {static_cast<int>(image.step[0])};
@@ -193,7 +193,7 @@ int Streamer::init(const StreamerConfig &streamer_config)
     }
 
     out_stream->codecpar->extradata_size = out_codec_ctx->extradata_size;
-    out_stream->codecpar->extradata = (uint8_t*) av_mallocz(out_codec_ctx->extradata_size);
+    out_stream->codecpar->extradata = static_cast<uint8_t*>(av_mallocz(out_codec_ctx->extradata_size));
     memcpy(out_stream->codecpar->extradata, out_codec_ctx->extradata, out_codec_ctx->extradata_size);
 
     av_dump_format(format_ctx, 0, config.server.c_str(), 1);
@@ -212,4 +212,4 @@ int Streamer::init(const StreamerConfig &streamer_config)
     return 0;
 }
 
-}
+} // namespace streamer
