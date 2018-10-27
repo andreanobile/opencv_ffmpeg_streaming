@@ -139,7 +139,6 @@ int main(int argc, char *argv[])
         if(!from_camera) {
             streamer.stream_frame(proc_frame);
         } else {
-
             streamer.stream_frame(proc_frame, frame_time.count()*streamer.inv_stream_timebase);
         }
 
