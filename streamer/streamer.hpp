@@ -25,8 +25,9 @@ namespace streamer
 #define STREAMER_ALIGN_FRAME_BUFFER 32
 
 
-struct Scaler
+class Scaler
 {
+public:
     SwsContext *ctx;
 
     Scaler()
@@ -54,8 +55,9 @@ struct Scaler
 };
 
 
-struct Picture
+class Picture
 {
+public:
     AVFrame *frame;
     uint8_t *data;
 
