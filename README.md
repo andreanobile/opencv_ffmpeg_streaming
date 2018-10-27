@@ -20,7 +20,8 @@ $ cmake -DCMAKE_BUILD_TYPE=Debug ..
 $ make
 ```
 In main.cpp the stream url is defined as "rtmp://localhost/live/mystream" and must be adapted to your rtmp server settings
-To run the program:
+
+Run the program:
 ```
 $ ./build/simple_opencv_streaming <video_file>
 ```
