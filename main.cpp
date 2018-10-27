@@ -1,13 +1,11 @@
+#include "streamer/streamer.hpp"
+
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
-
 #include <chrono>
-
-
-#include "streamer/streamer.hpp"
 
 using namespace streamer;
 
@@ -106,8 +104,6 @@ int main(int argc, char *argv[])
     streamer.enable_av_debug_log();
     streamer.init(streamer_config);
 
-    cv::Mat read_frame;
-    bool ok = video_capture.read(read_frame);
     size_t streamed_frames = 0;
 
     std::chrono::high_resolution_clock clk;
@@ -118,6 +114,8 @@ int main(int argc, char *argv[])
     MovingAverage moving_average(10);
     double avg_frame_time;
 
+    cv::Mat read_frame;
+    bool ok = video_capture.read(read_frame);
     while(ok) {
         streamer.stream_frame(read_frame);
 
