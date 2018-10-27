@@ -22,8 +22,6 @@ extern "C" {
 namespace streamer
 {
 
-#define STREAMER_ALIGN_FRAME_BUFFER 32
-
 
 class Scaler
 {
@@ -55,9 +53,12 @@ public:
 };
 
 
+
 class Picture
 {
+    static const int align_frame_buffer = 32;
 public:
+
     AVFrame *frame;
     uint8_t *data;
 
@@ -67,10 +68,10 @@ public:
         data = nullptr;
         frame = av_frame_alloc();
 
-        int sz =  av_image_get_buffer_size(pix_fmt, width, height, 1);
-        int ret = posix_memalign(reinterpret_cast<void**>(&data), STREAMER_ALIGN_FRAME_BUFFER, sz);
+        int sz =  av_image_get_buffer_size(pix_fmt, width, height, align_frame_buffer);
+        int ret = posix_memalign(reinterpret_cast<void**>(&data), align_frame_buffer, sz);
 
-        av_image_fill_arrays(frame->data, frame->linesize, data, pix_fmt, width, height, 1);
+        av_image_fill_arrays(frame->data, frame->linesize, data, pix_fmt, width, height, align_frame_buffer);
         frame->format = pix_fmt;
         frame->width  = width;
         frame->height = height;
@@ -157,7 +158,6 @@ class Streamer
     }
 
 public:
-
     StreamerConfig config;
     Streamer();
     ~Streamer();
