@@ -153,8 +153,7 @@ class Streamer
     void cleanup();
     bool can_stream()
     {
-        bool ok = network_init_ok && rtmp_server_conn && init_ok;
-        return ok;
+        return network_init_ok && rtmp_server_conn && init_ok;
     }
 
 public:
