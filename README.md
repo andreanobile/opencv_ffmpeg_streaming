@@ -21,7 +21,12 @@ $ make
 ```
 In main.cpp the stream url is defined as "rtmp://localhost/live/mystream" and must be adapted to your rtmp server settings
 
-Run the program:
+Run the program on a video:
 ```
 $ ./build/simple_opencv_streaming <video_file>
 ```
+From camera
+```
+$ ./build/simple_opencv_streaming 0
+```
+

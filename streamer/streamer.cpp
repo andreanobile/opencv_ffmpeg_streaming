@@ -94,6 +94,7 @@ Streamer::Streamer()
     out_codec_ctx = nullptr;
     rtmp_server_conn = false;
     av_register_all();
+    inv_stream_timebase = 30.0;
     network_init_ok = !avformat_network_init();
 }
 
@@ -128,6 +129,17 @@ void Streamer::stream_frame(const cv::Mat &image)
         const int stride[] = {static_cast<int>(image.step[0])};
         sws_scale(scaler.ctx, &image.data, stride, 0, image.rows, picture.frame->data, picture.frame->linesize);
         picture.frame->pts += av_rescale_q(1, out_codec_ctx->time_base, out_stream->time_base);
+        encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
+    }
+}
+
+
+void Streamer::stream_frame(const cv::Mat &image, int64_t frame_duration)
+{
+    if(can_stream()) {
+        const int stride[] = {static_cast<int>(image.step[0])};
+        sws_scale(scaler.ctx, &image.data, stride, 0, image.rows, picture.frame->data, picture.frame->linesize);
+        picture.frame->pts += frame_duration; //time of frame in milliseconds
         encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
     }
 }
@@ -186,7 +198,7 @@ int Streamer::init(const StreamerConfig &streamer_config)
     out_codec_ctx = avcodec_alloc_context3(out_codec);
 
     set_codec_params(format_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate, codec_id);
-    out_stream->time_base = out_codec_ctx->time_base;
+    out_stream->time_base = out_codec_ctx->time_base; //will be set afterwards by avformat_write_header to 1/1000
 
     if(set_options_and_open_encoder(out_stream, out_codec_ctx, out_codec, config.profile)) {
         return 1;
@@ -199,14 +211,17 @@ int Streamer::init(const StreamerConfig &streamer_config)
     av_dump_format(format_ctx, 0, config.server.c_str(), 1);
 
     picture.init(out_codec_ctx->pix_fmt, config.dst_width, config.dst_height);
-    scaler.init(out_codec_ctx, config.src_width, config.src_height,config.dst_width, config.dst_height, SWS_BICUBIC);
-
+    scaler.init(out_codec_ctx, config.src_width, config.src_height,config.dst_width, config.dst_height, SWS_BILINEAR);
 
     if (avformat_write_header(format_ctx, nullptr) < 0)
     {
         fprintf(stderr, "Could not write header!\n");
         return 1;
     }
+
+    printf("stream time base = %d / %d \n", out_stream->time_base.num, out_stream->time_base.den);
+
+    inv_stream_timebase = (double)out_stream->time_base.den/(double)out_stream->time_base.num;
 
     init_ok = true;
     return 0;

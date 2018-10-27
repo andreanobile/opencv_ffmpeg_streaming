@@ -158,12 +158,14 @@ class Streamer
     }
 
 public:
+    double inv_stream_timebase;
     StreamerConfig config;
     Streamer();
     ~Streamer();
     void enable_av_debug_log();
     int init(const StreamerConfig &streamer_config);
     void stream_frame(const cv::Mat &frame);
+    void stream_frame(const cv::Mat &image, int64_t frame_duration);
 };
 
 } // namespace streamer
