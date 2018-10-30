@@ -38,8 +38,9 @@ static int encode_and_write_frame(AVCodecContext *codec_ctx, AVFormatContext *fm
 }
 
 
-static void set_codec_params(AVFormatContext *fctx, AVCodecContext *codec_ctx, double width, double height,
-                      int fps, int bitrate, AVCodecID codec_id)
+static int set_options_and_open_encoder(AVFormatContext *fctx, AVStream *stream, AVCodecContext *codec_ctx, AVCodec *codec,
+                                        std::string codec_profile, double width, double height,
+                                        int fps, int bitrate, AVCodecID codec_id)
 {
     const AVRational dst_fps = {fps, 1};
 
@@ -57,11 +58,9 @@ static void set_codec_params(AVFormatContext *fctx, AVCodecContext *codec_ctx, d
     {
         codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
     }
-}
 
+    stream->time_base = codec_ctx->time_base; //will be set afterwards by avformat_write_header to 1/1000
 
-static int set_options_and_open_encoder(AVStream *stream, AVCodecContext *codec_ctx, AVCodec *codec, std::string codec_profile)
-{
     int ret = avcodec_parameters_from_context(stream->codecpar, codec_ctx);
     if (ret < 0)
     {
@@ -169,8 +168,7 @@ int Streamer::init(const StreamerConfig &streamer_config)
     }
 
     //AVIOContext for accessing the resource indicated by url
-    if (!(format_ctx->oformat->flags & AVFMT_NOFILE))   {
-        //maybe use open not open2
+    if (!(format_ctx->oformat->flags & AVFMT_NOFILE)) {
         int avopen_ret  = avio_open2(&format_ctx->pb, config.server.c_str(),
                                      AVIO_FLAG_WRITE, nullptr, nullptr);
         if (avopen_ret < 0)  {
@@ -197,10 +195,8 @@ int Streamer::init(const StreamerConfig &streamer_config)
 
     out_codec_ctx = avcodec_alloc_context3(out_codec);
 
-    set_codec_params(format_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate, codec_id);
-    out_stream->time_base = out_codec_ctx->time_base; //will be set afterwards by avformat_write_header to 1/1000
-
-    if(set_options_and_open_encoder(out_stream, out_codec_ctx, out_codec, config.profile)) {
+    if(set_options_and_open_encoder(format_ctx, out_stream, out_codec_ctx, out_codec, config.profile,
+                                    config.dst_width, config.dst_height, config.fps, config.bitrate, codec_id)) {
         return 1;
     }
 
