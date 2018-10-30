@@ -30,3 +30,4 @@ From camera
 $ ./build/simple_opencv_streaming 0
 ```
 
+To convert the rtmp stream to HLS and publish the stream to a browser I have written a tutorial on  <a href="https://www.nobile-engineering.com/wordpress/index.php/2018/10/30/video-streaming-hls-apache-nginx/"> a blog post </a> 
