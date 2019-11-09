@@ -1,5 +1,4 @@
 #include <boost/python.hpp>
-#include <opencv2/opencv.hpp>
 #include <set>
 #include <map>
 #include <memory>
@@ -13,7 +12,6 @@
 #include "streamer.hpp"
 
 namespace np = boost::python::numpy;
-using namespace cv;
 
 using namespace streamer;
 
@@ -26,10 +24,6 @@ void __attribute__ ((destructor)) lib_fini(void);
 
 void __attribute__ ((constructor)) lib_init(void)
 {
-    //if (!Py_IsInitialized()) {
-    //    Py_Initialize();
-    //}
-
     np::initialize();
 }
 
@@ -37,7 +31,6 @@ void __attribute__ ((destructor)) lib_fini(void)
 {
 
 }
-
 
 
 static char const* version()
@@ -63,16 +56,13 @@ public:
     void stream_frame(const np::ndarray &frame)
     {
         //print_shape("frame", frame);
-        Mat mat = Mat(frame.shape(0), frame.shape(1), CV_8UC3, frame.get_data());
-        Streamer::stream_frame(mat);
-
+        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(frame.get_data()));
     }
 
     void stream_frame_with_duration(const np::ndarray &frame, int64_t frame_duration)
     {
         //print_shape("frame", frame);
-        Mat mat = Mat(frame.shape(0), frame.shape(1), CV_8UC3, frame.get_data());
-        Streamer::stream_frame(mat, frame_duration);
+        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(frame.get_data()), frame_duration);
     }
 };
 
