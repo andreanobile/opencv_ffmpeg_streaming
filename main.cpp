@@ -9,6 +9,9 @@
 
 using namespace streamer;
 
+using time_point = std::chrono::high_resolution_clock::time_point;
+using high_resolution_clock = std::chrono::high_resolution_clock;
+
 
 class MovingAverage
 {
@@ -76,6 +79,20 @@ void process_frame(const cv::Mat &in, cv::Mat &out)
     in.copyTo(out);
 }
 
+
+void stream_frame(Streamer &streamer, const cv::Mat &image)
+{
+    streamer.stream_frame(image.data);
+}
+
+
+void stream_frame(Streamer &streamer, const cv::Mat &image, int64_t frame_duration)
+{
+    streamer.stream_frame(image.data, frame_duration);
+}
+
+
+
 int main(int argc, char *argv[])
 {
     if(argc != 2) {
@@ -111,18 +128,17 @@ int main(int argc, char *argv[])
     int bitrate = 500000;
     Streamer streamer;
     StreamerConfig streamer_config(cap_frame_width, cap_frame_height,
-                                   640, 360,
-                                   stream_fps, bitrate, "high444", "rtmp://localhost/live/mystream");
+                                   640, 480,
+                                   stream_fps, bitrate, "main", "rtmp://localhost/live/mystream");
 
-    streamer.enable_av_debug_log();
+    //streamer.enable_av_debug_log();
     streamer.init(streamer_config);
 
     size_t streamed_frames = 0;
 
-    std::chrono::high_resolution_clock clk;
-    std::chrono::high_resolution_clock::time_point time_start = clk.now();
-    std::chrono::high_resolution_clock::time_point time_stop = time_start;
-    std::chrono::high_resolution_clock::time_point time_prev = time_start;
+    high_resolution_clock clk;
+    time_point time_start = clk.now();
+    time_point time_prev = time_start;
 
     MovingAverage moving_average(10);
     double avg_frame_time;
@@ -131,15 +147,16 @@ int main(int argc, char *argv[])
     cv::Mat proc_frame;
     bool ok = video_capture.read(read_frame);
 
-    std::chrono::duration<double> elapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_start);
-    std::chrono::duration<double> frame_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_prev);
+    time_point time_stop = clk.now();
+    auto elapsed_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_start);
+    auto frame_time = std::chrono::duration_cast<std::chrono::duration<double>>(time_stop - time_prev);
 
     while(ok) {
         process_frame(read_frame, proc_frame);
         if(!from_camera) {
-            streamer.stream_frame(proc_frame);
+            stream_frame(streamer, proc_frame);
         } else {
-            streamer.stream_frame(proc_frame, frame_time.count()*streamer.inv_stream_timebase);
+            stream_frame(streamer, proc_frame, frame_time.count()*streamer.inv_stream_timebase);
         }
 
         time_stop = clk.now();
