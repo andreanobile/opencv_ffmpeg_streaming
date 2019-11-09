@@ -131,7 +131,8 @@ int main(int argc, char *argv[])
                                    640, 480,
                                    stream_fps, bitrate, "main", "rtmp://localhost/live/mystream");
 
-    //streamer.enable_av_debug_log();
+    streamer.enable_av_debug_log();
+
     streamer.init(streamer_config);
 
     size_t streamed_frames = 0;
