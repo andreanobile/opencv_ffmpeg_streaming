@@ -26,9 +26,9 @@ include(CMakeToolsHelpers OPTIONAL)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-add_subdirectory(streamer)
 
-add_executable(simple_opencv_streaming main.cpp)
+
+
 
 
 find_library(AVCODEC_LIBRARY avcodec)
@@ -38,6 +38,9 @@ find_library(SWSCALE_LIBRARY swscale)
 
 MESSAGE(${AVFORMAT_LIBRARY})
 
+add_subdirectory(streamer)
+
+add_executable(simple_opencv_streaming main.cpp)
 
 target_link_libraries(simple_opencv_streaming  streamer ${OpenCV_LIBS} ${AVCODEC_LIBRARY} ${AVFORMAT_LIBRARY} ${AVUTIL_LIBRARY} ${SWSCALE_LIBRARY} Qt5::Core)
 #target_link_libraries(simple_opencv_streaming avcodec avformat avutil swscale avfilter avdevice)
