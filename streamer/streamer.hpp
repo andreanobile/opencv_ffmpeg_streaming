@@ -17,7 +17,7 @@ extern "C" {
 }
 
 #include <string>
-#include <opencv2/opencv.hpp>
+
 
 namespace streamer
 {
@@ -164,8 +164,9 @@ public:
     ~Streamer();
     void enable_av_debug_log();
     int init(const StreamerConfig &streamer_config);
-    void stream_frame(const cv::Mat &frame);
-    void stream_frame(const cv::Mat &image, int64_t frame_duration);
+    void stream_frame(const uint8_t *data);
+    void stream_frame(const uint8_t *data, int64_t frame_duration);
+
 };
 
 } // namespace streamer

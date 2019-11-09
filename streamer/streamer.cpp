@@ -1,7 +1,6 @@
 #include "streamer.hpp"
 
 #include <string>
-#include <opencv2/opencv.hpp>
 #include <cstdio>
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,22 +121,23 @@ Streamer::~Streamer()
 }
 
 
-void Streamer::stream_frame(const cv::Mat &image)
+
+void Streamer::stream_frame(const uint8_t *data)
 {
     if(can_stream()) {
-        const int stride[] = {static_cast<int>(image.step[0])};
-        sws_scale(scaler.ctx, &image.data, stride, 0, image.rows, picture.frame->data, picture.frame->linesize);
+        const int stride[] = {static_cast<int>(config.src_width*3)};
+        sws_scale(scaler.ctx, &data, stride, 0, config.src_height, picture.frame->data, picture.frame->linesize);
         picture.frame->pts += av_rescale_q(1, out_codec_ctx->time_base, out_stream->time_base);
         encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
     }
 }
 
 
-void Streamer::stream_frame(const cv::Mat &image, int64_t frame_duration)
+void Streamer::stream_frame(const uint8_t *data, int64_t frame_duration)
 {
     if(can_stream()) {
-        const int stride[] = {static_cast<int>(image.step[0])};
-        sws_scale(scaler.ctx, &image.data, stride, 0, image.rows, picture.frame->data, picture.frame->linesize);
+        const int stride[] = {static_cast<int>(config.src_width*3)};
+        sws_scale(scaler.ctx, &data, stride, 0, config.src_height, picture.frame->data, picture.frame->linesize);
         picture.frame->pts += frame_duration; //time of frame in milliseconds
         encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
     }
