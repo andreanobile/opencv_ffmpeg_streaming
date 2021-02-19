@@ -22,16 +22,19 @@ static int encode_and_write_frame(AVCodecContext *codec_ctx, AVFormatContext *fm
         fprintf(stderr, "Error sending frame to codec context!\n");
         return ret;
     }
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(codec_ctx, &pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+            break;
+        else if (ret < 0) {
+            fprintf(stderr, "Error during encoding\n");
+            break;
+        }
 
-    ret = avcodec_receive_packet(codec_ctx, &pkt);
-    if (ret < 0)
-    {
-        fprintf(stderr, "Error receiving packet from codec context!\n" );
-        return ret;
+        
+        av_interleaved_write_frame(fmt_ctx, &pkt);        
+        av_packet_unref(&pkt);
     }
-
-    av_interleaved_write_frame(fmt_ctx, &pkt);
-    av_packet_unref(&pkt);
 
     return 0;
 }
