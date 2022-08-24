@@ -1,15 +1,14 @@
 # python wrapper
-building the python wrapper requires boost-numpy. On Ubuntu 18 the package can be installed with:
-```
-$ sudo apt-get install libboost-numpy-dev
+
+requires pip, wheel
+
+```bash
+pip install wheel
 ```
 
-from this directory, to build the python library in Release mode:
+from the previous directory to build and install the python module:
 ```
-$ mkdir build
-$ cd build
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
-$ make
+pip install ./python
 ```
 
 test_stream.py is an example on how to use the wrapper.
