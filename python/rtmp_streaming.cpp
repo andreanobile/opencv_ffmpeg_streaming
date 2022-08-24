@@ -1,4 +1,3 @@
-#include <boost/python.hpp>
 #include <set>
 #include <map>
 #include <memory>
@@ -7,44 +6,26 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cstdio>
-#include <boost/python/numpy.hpp>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
 #include "streamer.hpp"
 
-namespace np = boost::python::numpy;
+namespace py = pybind11;
+using namespace pybind11::literals;
 
 using namespace streamer;
 
-extern "C"
-{
-void __attribute__ ((constructor)) lib_init(void);
-void __attribute__ ((destructor)) lib_fini(void);
-}
-
-
-void __attribute__ ((constructor)) lib_init(void)
-{
-    np::initialize();
-}
-
-void __attribute__ ((destructor)) lib_fini(void)
-{
-
-}
-
-
-static char const* version()
-{
-   return "1.0";
-}
-
-
-void print_shape(const char *array_name, const np::ndarray &array)
+void print_shape(const char *array_name, const py::array &array)
 {
     printf("%s shape: [", array_name);
-    int nd = array.get_nd();
+
+    //py::buffer_info info = array.request();
+    
+    int nd = array.ndim();
+    
     for(int i=0;i<nd;i++) {
-        printf("%ld ", array.shape(i));
+        printf("%ld ", array.shape()[i]);
     }
     printf("]\n");
 }
@@ -53,27 +34,29 @@ void print_shape(const char *array_name, const np::ndarray &array)
 class PythonStreamer : public Streamer
 {
 public:
-    void stream_frame(const np::ndarray &frame)
+    void stream_frame(const py::array &frame)
     {
         //print_shape("frame", frame);
-        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(frame.get_data()));
+        py::buffer_info info = frame.request();
+        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(info.ptr));
     }
 
-    void stream_frame_with_duration(const np::ndarray &frame, int64_t frame_duration)
+    void stream_frame_with_duration(const py::array &frame, int64_t frame_duration)
     {
-        //print_shape("frame", frame);
-        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(frame.get_data()), frame_duration);
+        py::buffer_info info = frame.request();
+        Streamer::stream_frame(reinterpret_cast<const uint8_t*>(info.ptr), frame_duration);
     }
 };
 
 
-BOOST_PYTHON_MODULE(rtmp_streaming)
-{
-    using namespace boost::python;
-    def("version", version);
 
-    class_<StreamerConfig>("StreamerConfig", init<>())
-            .def(init<int, int, int, int, int, int,
+
+PYBIND11_MODULE(rtmp_streaming, m)
+{
+    m.doc() = "streaming from python";
+    py::class_<StreamerConfig>(m, "StreamerConfig")
+            .def(py::init<>())
+            .def(py::init<int, int, int, int, int, int,
                  const std::string &,
                  const std::string &>())
             .def_readwrite("source_width", &StreamerConfig::src_width)
@@ -85,15 +68,13 @@ BOOST_PYTHON_MODULE(rtmp_streaming)
             .def_readwrite("stream_profile", &StreamerConfig::profile)
             .def_readwrite("stream_server", &StreamerConfig::server);
 
-    class_<PythonStreamer>("Streamer", init<>())
+    py::class_<PythonStreamer>(m, "Streamer")
+            .def(py::init<>())
             .def("init", &PythonStreamer::init)
             .def("enable_av_debug_log", &PythonStreamer::enable_av_debug_log)
             .def("stream_frame", &PythonStreamer::stream_frame)
             .def("stream_frame_with_duration", &PythonStreamer::stream_frame_with_duration);
 }
-
-
-
 
 
 
