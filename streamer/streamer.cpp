@@ -1,5 +1,5 @@
 #include "streamer.hpp"
-
+#include <string>
 #include <string>
 #include <cstdio>
 #include <stdio.h>
@@ -10,10 +10,10 @@ namespace streamer
 {
 
 #define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P
-
-static int encode_and_write_frame(AVCodecContext *codec_ctx, AVFormatContext *fmt_ctx, AVFrame *frame)
+// rescale to be set to true whe writing frames to file
+static int encode_and_write_frame(AVCodecContext *codec_ctx, AVFormatContext *fmt_ctx, AVFrame *frame, bool rescale)
 {
-    AVPacket pkt = {0};
+    AVPacket pkt;
     av_init_packet(&pkt);
 
     int ret = avcodec_send_frame(codec_ctx, frame);
@@ -31,6 +31,9 @@ static int encode_and_write_frame(AVCodecContext *codec_ctx, AVFormatContext *fm
             break;
         }
 
+        if(rescale) {
+            av_packet_rescale_ts(&pkt, codec_ctx->time_base, fmt_ctx->streams[0]->time_base);
+        }
         
         av_interleaved_write_frame(fmt_ctx, &pkt);        
         av_packet_unref(&pkt);
@@ -94,7 +97,9 @@ Streamer::Streamer()
     out_stream = nullptr;
     out_codec_ctx = nullptr;
     rtmp_server_conn = false;
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     av_register_all();
+#endif
     inv_stream_timebase = 30.0;
     network_init_ok = !avformat_network_init();
 }
@@ -131,7 +136,7 @@ void Streamer::stream_frame(const uint8_t *data)
         const int stride[] = {static_cast<int>(config.src_width*3)};
         sws_scale(scaler.ctx, &data, stride, 0, config.src_height, picture.frame->data, picture.frame->linesize);
         picture.frame->pts += av_rescale_q(1, out_codec_ctx->time_base, out_stream->time_base);
-        encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
+        encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame, false);
     }
 }
 
@@ -142,7 +147,7 @@ void Streamer::stream_frame(const uint8_t *data, int64_t frame_duration)
         const int stride[] = {static_cast<int>(config.src_width*3)};
         sws_scale(scaler.ctx, &data, stride, 0, config.src_height, picture.frame->data, picture.frame->linesize);
         picture.frame->pts += frame_duration; //time of frame in milliseconds
-        encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame);
+        encode_and_write_frame(out_codec_ctx, format_ctx, picture.frame, false);
     }
 }
 
