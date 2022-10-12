@@ -60,6 +60,12 @@ public:
         py::buffer_info info = frame.request();
         Encoder::put_frame(reinterpret_cast<const uint8_t*>(info.ptr), frame_duration);
     }
+
+    void write(const py::array &frame)
+    {
+        py::buffer_info info = frame.request();
+        Encoder::put_frame(reinterpret_cast<const uint8_t*>(info.ptr), 0.0);
+    }
 };
 
 
@@ -109,6 +115,7 @@ PYBIND11_MODULE(rtmp_streaming, m)
             .def("enable_av_debug_log", &PythonEncoder::enable_av_debug_log)
             .def("close", &PythonEncoder::close)
             .def("release", &PythonEncoder::close)
+            .def("write", &PythonEncoder::write)
             .def("put_frame", &PythonEncoder::put_frame);
 }
 
