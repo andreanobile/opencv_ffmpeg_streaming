@@ -56,7 +56,10 @@ PYBIND11_MODULE(ffmpeg_encoder, m)
             .def_readwrite("enc_bitrate", &EncoderConfig::bitrate)
             .def_readwrite("codec_params", &EncoderConfig::codec_params)
             .def_readwrite("codec_name", &EncoderConfig::codec_name)
+            .def("set_mode_file", &EncoderConfig::set_mode_file)
+            .def("set_mode_stream", &EncoderConfig::set_mode_stream)
             .def_readwrite("output", &EncoderConfig::output);
+
 
     py::class_<PythonEncoder>(m, "Encoder")
             .def(py::init<>())

@@ -34,7 +34,7 @@ struct EncoderConfig
     std::map<std::string, std::string> codec_params;
     std::string output;
 
-    ENCODER_MODE mode = ENCODER_MODE::STREAM;
+    ENCODER_MODE mode = ENCODER_MODE::FILE;
 
 
     void set_mode_file()
