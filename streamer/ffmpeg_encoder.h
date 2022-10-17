@@ -70,7 +70,7 @@ class Encoder
 
 public:
     Encoder();
-    ~Encoder();
+    virtual ~Encoder();
 
     void put_frame(const uint8_t *data, double duration=0.0);
     bool init(const EncoderConfig &config);
