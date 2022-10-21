@@ -84,8 +84,8 @@ static void set_codec_params(AVCodec *codec, AVFormatContext *fctx, AVCodecConte
     codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
     codec_ctx->width = width;
     codec_ctx->height = height;
-    codec_ctx->gop_size = 12;
-    codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    codec_ctx->gop_size = 15;
+    codec_ctx->pix_fmt = AV_PIX_FMT_YUV444P;
     codec_ctx->framerate = av_inv_q(codec_ctx->time_base);
 
     codec_ctx->bit_rate = bitrate;
