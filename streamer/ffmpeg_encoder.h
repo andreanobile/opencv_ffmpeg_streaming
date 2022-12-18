@@ -61,6 +61,7 @@ class Encoder
     SwsContext *swsctx;
     std::vector<uint8_t> framebuf;
     bool init_failure;
+    bool use_vaapi = false;
 
     //std::string codec_name;
     //std::map<std::string, std::string> codec_params;
