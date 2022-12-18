@@ -11,9 +11,9 @@ print(fin)
 cfg = EncoderConfig()
 cfg.set_mode_file()
 cfg.output = 'test.mkv'
-cfg.codec_name = 'h264_nvenc' #
-cfg.enc_width = 640
-cfg.enc_height = 480
+cfg.codec_name = 'h264_vaapi' #'h264_nvenc' #
+cfg.enc_width = 1280
+cfg.enc_height = 720
 cfg.enc_fps = 30
 #cp = {}
 #cp["profile"] = "high"
@@ -26,6 +26,8 @@ cfg.codec_params["preset"]  = "medium"
 cfg.enc_bitrate = 1000000
 
 enc = Encoder()
+enc.enable_av_debug_log()
+
 ec_init = False
 
 
@@ -58,10 +60,8 @@ while(cap.isOpened()):
     enc.put_frame(frame, 0.0)  
     # Display the resulting frame
     cv2.imshow('Frame',frame)
-
-    
     # Press Q on keyboard to  exit
-    if cv2.waitKey(25) & 0xFF == ord('q'):
+    if cv2.waitKey(2) & 0xFF == ord('q'):
       break
 
   # Break the loop

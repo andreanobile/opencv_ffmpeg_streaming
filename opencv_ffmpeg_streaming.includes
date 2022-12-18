@@ -1,1 +1,5 @@
 streamer
+python/pybind11/include
+/usr/lib/llvm-10/lib/clang/10.0.0/include
+.
+/usr/include/python3.8/
