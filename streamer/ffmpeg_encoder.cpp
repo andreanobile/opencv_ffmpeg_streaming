@@ -374,25 +374,37 @@ bool Encoder::stream_init()
     }
 
     out_codec = find_encoder_by_name(codec_name.c_str(), AVMEDIA_TYPE_VIDEO);
-    std::size_t vaapi_found = codec_name.find("vaapi");
     AVPixelFormat pix_fmt = AV_PIX_FMT_YUV420P;
 
+    std::size_t vaapi_found = config.codec_name.find("vaapi");
     if (vaapi_found !=std::string::npos) {
+        use_vaapi = true;
+        pix_fmt = AV_PIX_FMT_NV12;
+        printf("requested vaapi codec\n");
         int err = av_hwdevice_ctx_create(&vaapi_hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,  NULL, NULL, 0);
         if (err < 0) {
             fprintf(stderr, "Failed to create a VAAPI device.");
         }
-        use_vaapi = true;
-        pix_fmt = AV_PIX_FMT_NV12;
     }
+
 
     out_stream = avformat_new_stream(ofmt_ctx, nullptr);
     out_codec_ctx = avcodec_alloc_context3(out_codec);
-    set_codec_params(out_codec, pix_fmt, ofmt_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate);
+    if (use_vaapi) {
+        set_codec_params(out_codec, AV_PIX_FMT_VAAPI, ofmt_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate);
+
+        if (set_hwframe_ctx(out_codec_ctx, vaapi_hw_device_ctx, config.dst_width, config.dst_height) < 0) {
+            fprintf(stderr, "Failed to set hwframe context.\n");
+        }
+    } else {
+        set_codec_params(out_codec, pix_fmt, ofmt_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate);
+    }
+
 
     out_stream->time_base = out_codec_ctx->time_base; //will be set afterwards by avformat_write_header to 1/1000
 
     initialize_codec(out_stream, out_codec_ctx, out_codec, codec_params);
+    printf("codec initialized\n");
 
     out_stream->codecpar->extradata_size = out_codec_ctx->extradata_size;
     out_stream->codecpar->extradata = (uint8_t*) av_mallocz(out_codec_ctx->extradata_size);
@@ -400,8 +412,8 @@ bool Encoder::stream_init()
 
     av_dump_format(ofmt_ctx, 0, config.output.c_str(), 1);
 
-    framebuf.resize(av_image_get_buffer_size(out_codec_ctx->pix_fmt, config.dst_width, config.dst_height, 1));
-    frame = set_frame_buffer(out_codec_ctx->pix_fmt, config.dst_width, config.dst_height, framebuf);
+    framebuf.resize(av_image_get_buffer_size(pix_fmt, config.dst_width, config.dst_height, 1));
+    frame = set_frame_buffer(pix_fmt, config.dst_width, config.dst_height, framebuf);
 
     out_stream->avg_frame_rate = out_codec_ctx->framerate;
 
@@ -412,6 +424,7 @@ bool Encoder::stream_init()
         return false;
     }
 
+    printf("encoder initialized\n");
     return true;
 }
 
