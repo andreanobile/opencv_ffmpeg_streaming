@@ -1,4 +1,4 @@
-from rtmp_streaming import EncoderConfig, Encoder
+from rtmp_streaming import EncoderConfig, Encoder, EncoderAsync
 import cv2
 import sys
 import time
@@ -11,7 +11,7 @@ print(fin)
 
 cfg = EncoderConfig()
 cfg.set_mode_stream()
-cfg.output = 'rtmp://80.211.254.38/homestream78356/test'
+cfg.output = 'rtmp://localhost/live/test'
 cfg.codec_name = 'h264_vaapi' #'h264_nvenc' #
 cfg.enc_width = 1280
 cfg.enc_height = 720
@@ -23,8 +23,8 @@ cfg.enc_fps = 30
 cfg.codec_params["profile"] = "baseline"
 cfg.codec_params["preset"]  = "medium"
 
-# cfg.codec_params["tune"] = "zerolatency"
-cfg.enc_bitrate = 2000000
+#cfg.codec_params["tune"] = "zerolatency"
+cfg.enc_bitrate = 3000000
 
 enc = Encoder()
 #enc.enable_av_debug_log()
@@ -66,14 +66,13 @@ while(cap.isOpened()):
     cur = time.time()
     duration = cur-prev
     print('duration', duration)
-    #enc.put_frame(frame, duration)
+    enc.put_frame(frame, duration*1000)
     #enc.put_frame(frame, 100)
     prev = cur
-    # Display the resulting frame
-    cv2.imshow('Frame',frame)
-    # Press Q on keyboard to  exit
-    if cv2.waitKey(2) & 0xFF == ord('q'):
-      break
+
+    #cv2.imshow('Frame',frame)
+    #if cv2.waitKey(2) & 0xFF == ord('q'):
+    #  break
 
   # Break the loop
   else: 

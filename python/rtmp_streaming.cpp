@@ -99,18 +99,12 @@ public:
         th = std::thread(cmd_thread, this);
     }
 
-//    void put_frame(const py::array &frame, double frame_duration)
-//    {
-//        py::buffer_info info = frame.request();
-//        Encoder::put_frame(reinterpret_cast<const uint8_t*>(info.ptr), frame_duration);
-//    }
-
-    void write(const py::array &frame)
+    void put_frame(const py::array &frame, double frame_duration)
     {
         py::buffer_info info = frame.request();
         auto cmd = std::make_shared<EncoderQueueItem>();
         cmd->cmd = ENC_FRAME;
-        cmd->frame_duration = 0.0;
+        cmd->frame_duration = frame_duration;
         cmd->frame.resize(info.size * sizeof(uint8_t));
         memcpy(cmd->frame.data(), reinterpret_cast<const uint8_t*>(info.ptr), info.size * sizeof(uint8_t));
         while(!queue_push(cmd)) {
@@ -118,7 +112,12 @@ public:
         }
     }
 
-    void init(const EncoderConfig &config)
+    void write(const py::array &frame)
+    {
+        put_frame(frame, 0.0);
+    }
+
+    bool init(const EncoderConfig &config)
     {
         auto cmd = std::make_shared<EncoderQueueItem>();
         cmd->cmd = ENC_INIT;
@@ -127,6 +126,7 @@ public:
         while(!queue_push(cmd)) {
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
+        return true;
     }
 
     void close()
@@ -138,10 +138,15 @@ public:
         }
     }
 
-    // TODO: implement backpressure
+
     bool queue_push(std::shared_ptr<EncoderQueueItem> &cmd)
     {
+        //printf("queue size = %lu\n", cmd_queue.size());
+        // backpressure
         const std::lock_guard<std::mutex> lock(cmd_mutex);
+        if (cmd_queue.size() > 10) {
+            return false;
+        }
         cmd_queue.push_back(cmd);
         return true;
     }
@@ -249,12 +254,9 @@ PYBIND11_MODULE(rtmp_streaming, m)
             .def(py::init<>())
             .def("init", &PythonEncoderAsync::init)
             .def("enable_av_debug_log", &PythonEncoderAsync::enable_av_debug_log)
-            //.def("close", &PythonEncoder::close)
+            .def("close", &PythonEncoder::close)
             .def("release", &PythonEncoderAsync::close)
-            .def("write", &PythonEncoderAsync::write);
-            //.def("put_frame", &PythonEncoder::put_frame);
+            .def("write", &PythonEncoderAsync::write)
+            .def("put_frame", &PythonEncoderAsync::put_frame);
 
 }
-
-
-
