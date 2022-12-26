@@ -3,7 +3,6 @@ README.md
 main.cpp
 python/CMakeLists.txt
 python/README.md
-python/encoder.cpp
 python/rtmp_streaming.cpp
 python/setup.py
 python/test_encoder.py
