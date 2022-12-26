@@ -49,7 +49,7 @@ struct EncoderConfig
 
 };
 
-
+using Packet = std::vector<uint8_t>;
 
 class Encoder
 {
@@ -73,8 +73,12 @@ public:
     Encoder();
     virtual ~Encoder();
 
-    void put_frame(const uint8_t *data, double duration=0.0);
     bool init(const EncoderConfig &config);
+    bool open(const EncoderConfig &config);
+
+
+    Packet encode(const uint8_t *data);
+    void put_frame(const uint8_t *data, double duration=0.0);
 
 
     void close();

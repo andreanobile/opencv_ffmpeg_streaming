@@ -71,6 +71,20 @@ public:
         py::buffer_info info = frame.request();
         Encoder::put_frame(reinterpret_cast<const uint8_t*>(info.ptr), 0.0);
     }
+
+    py::array encode(const std::string &format_name, int w, int h, py::buffer b)
+    {
+      py::buffer_info info = b.request();
+
+      // TODO: pass create array fn into encode, copy data directly there instead of copy 2 times
+      Packet pkt = Encoder::encode(reinterpret_cast<const uint8_t*>(info.ptr));
+      std::vector<size_t> shape = {pkt.size()};
+      py::dtype dtype = py::dtype::of<uint8_t>();
+      py::array pyarr(dtype, shape);
+      py::buffer_info ainfo = pyarr.request();
+      memcpy(ainfo.ptr, pkt.data(), pkt.size());
+      return pyarr;
+    }
 };
 
 enum ENCODER_COMMAND {
@@ -243,10 +257,13 @@ PYBIND11_MODULE(rtmp_streaming, m)
 
     py::class_<PythonEncoder>(m, "Encoder")
             .def(py::init<>())
+            .def_readwrite("config", &PythonEncoder::config)
+            .def("open", &PythonEncoder::open)
             .def("init", &PythonEncoder::init)
             .def("enable_av_debug_log", &PythonEncoder::enable_av_debug_log)
             .def("close", &PythonEncoder::close)
             .def("release", &PythonEncoder::close)
+            .def("encode", &PythonEncoder::encode)
             .def("write", &PythonEncoder::write)
             .def("put_frame", &PythonEncoder::put_frame);
 

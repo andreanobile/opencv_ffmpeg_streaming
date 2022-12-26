@@ -123,9 +123,12 @@ static void set_codec_params(AVCodec *codec, AVPixelFormat pix_fmt, AVFormatCont
     codec_ctx->framerate = av_inv_q(codec_ctx->time_base);
 
     codec_ctx->bit_rate = bitrate;
-    if (fctx->oformat->flags & AVFMT_GLOBALHEADER)
-    {
-        codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    if (fctx) {
+        if (fctx->oformat->flags & AVFMT_GLOBALHEADER)
+        {
+            codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
     }
 
 }
@@ -168,6 +171,30 @@ static int initialize_codec(AVStream *stream, AVCodecContext *codec_ctx, AVCodec
         }
     }
 
+
+    av_dict_free(&av_codec_options);
+
+    return 0;
+
+}
+
+
+static int initialize_codec(AVCodecContext *codec_ctx, AVCodec *codec, const std::map<std::string, std::string> &codec_options)
+{
+    int ret;
+
+    AVDictionary *av_codec_options = nullptr;
+    for(auto it = codec_options.begin(); it != codec_options.end(); ++it) {
+        //std::cout << it->first << " " << it->second << "\n";
+        av_dict_set(&av_codec_options, it->first.c_str(), it->second.c_str(), 0);
+    }
+
+    // open video encoder
+    ret = avcodec_open2(codec_ctx, codec, &av_codec_options);
+    if (ret < 0) {
+        fprintf(stderr, "Encoder: Could not open video encoder!\n");
+        return 1;
+    }
 
     av_dict_free(&av_codec_options);
 
@@ -287,6 +314,143 @@ static int write_frame(AVCodecContext *codec_ctx, AVFormatContext *fmt_ctx, AVFr
 
     return ret;
 
+}
+
+
+static Packet encode_frame(AVCodecContext *codec_ctx, AVFrame *frame)
+{
+    Packet packet;
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    pkt.data = NULL;
+    pkt.size = 0;
+
+    int ret = avcodec_send_frame(codec_ctx, frame);
+    if (ret < 0)
+    {
+        fprintf(stderr, "Error sending frame to codec context!\n");
+        return packet;
+    }
+
+    while(1) {
+        ret = avcodec_receive_packet(codec_ctx, &pkt);
+
+        if (ret == AVERROR(EAGAIN)) {
+            break;
+        }
+
+        if (ret < 0) {
+            fprintf(stderr, "Error receiving packet from codec context!\n" );
+            return packet;
+        }
+        size_t oldsize = packet.size();
+        packet.resize(oldsize + pkt.size);
+        memcpy(packet.data() + oldsize, pkt.data, pkt.size);
+        av_packet_unref(&pkt);
+
+    }
+
+    return packet;
+
+}
+
+
+
+Packet Encoder::encode(const uint8_t *data)
+{
+    Packet packet;
+    if(!swsctx) {
+        AVPixelFormat pix_fmt = out_codec_ctx->pix_fmt;
+        if (use_vaapi) {
+            pix_fmt = AV_PIX_FMT_NV12;
+        }
+        swsctx = initialize_sample_scaler(pix_fmt, config.src_width, config.src_height, config.dst_width, config.dst_height);
+    }
+    if (!swsctx) {
+        fprintf(stderr, "Encoder : failed to initialize scaler\n");
+        return packet;
+    }
+
+    const int stride[] = {static_cast<int>(config.src_width*3)};
+
+    sws_scale(swsctx, &data, stride, 0, config.src_height, frame->data, frame->linesize);
+
+    AVFrame *hw_frame = nullptr;
+    AVFrame *frame_to_encode = frame;
+
+    if (use_vaapi) {
+
+        if (!(hw_frame = av_frame_alloc())) {
+            exit(0);
+        }
+
+        if (av_hwframe_get_buffer(out_codec_ctx->hw_frames_ctx, hw_frame, 0) < 0) {
+            printf("aia!\n");
+            exit(0);
+        }
+        if (!hw_frame->hw_frames_ctx) {
+            printf("aia!\n");
+            exit(0);
+        }
+        if ((av_hwframe_transfer_data(hw_frame, frame, 0)) < 0) {
+            fprintf(stderr, "Error while transferring frame data to surface.");
+            exit(0);
+        }
+
+        frame_to_encode = hw_frame;
+    }
+
+    frame->pts += 1;
+    frame_to_encode->pts = frame->pts;
+    packet = encode_frame(out_codec_ctx, frame_to_encode);
+
+    if (hw_frame) {
+        av_frame_free(&hw_frame);
+    }
+
+    return packet;
+}
+
+
+
+bool Encoder::open(const EncoderConfig &config_)
+{
+    config = config_;
+    printf("opening codedc \n");
+    out_codec = find_encoder_by_name(config.codec_name.c_str(), AVMEDIA_TYPE_VIDEO);
+
+    AVPixelFormat pix_fmt = AV_PIX_FMT_YUV420P;
+    std::size_t vaapi_found = config.codec_name.find("vaapi");
+    if (vaapi_found !=std::string::npos) {
+        use_vaapi = true;
+        pix_fmt = AV_PIX_FMT_NV12;
+        printf("requested vaapi codec\n");
+        const char *device = NULL;//"/dev/dri/renderD128";
+        int err = av_hwdevice_ctx_create(&vaapi_hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI,  device, NULL, 0);
+        if (err < 0) {
+            fprintf(stderr, "Failed to create a VAAPI device.");
+        }
+    }
+
+    out_codec_ctx = avcodec_alloc_context3(out_codec);
+    if (use_vaapi) {
+        set_codec_params(out_codec, AV_PIX_FMT_VAAPI, ofmt_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate);
+
+        if (set_hwframe_ctx(out_codec_ctx, vaapi_hw_device_ctx, config.dst_width, config.dst_height) < 0) {
+            fprintf(stderr, "Failed to set hwframe context.\n");
+        }
+    } else {
+        set_codec_params(out_codec, pix_fmt, ofmt_ctx, out_codec_ctx, config.dst_width, config.dst_height, config.fps, config.bitrate);
+    }
+
+    //printf("num of cp = %lu\n", config.codec_params.size());
+    initialize_codec(out_codec_ctx, out_codec, config.codec_params);
+    //printf("codec initialized\n");
+
+    framebuf.resize(av_image_get_buffer_size(pix_fmt, config.dst_width, config.dst_height, 1));
+    frame = set_frame_buffer(pix_fmt, config.dst_width, config.dst_height, framebuf);
+    //printf("encoder initialized\n");
+    return true;
 }
 
 void Encoder::put_frame(const uint8_t *data, double duration)
