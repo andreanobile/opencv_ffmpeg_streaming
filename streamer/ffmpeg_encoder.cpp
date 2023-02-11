@@ -701,6 +701,8 @@ Encoder::Encoder()
 void Encoder::close()
 {
     if(ofmt_ctx && out_codec_ctx) {
+        // flush
+        write_frame(out_codec_ctx, ofmt_ctx, nullptr, true);
         av_write_trailer(ofmt_ctx);
     }
 
